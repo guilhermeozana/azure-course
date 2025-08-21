@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Azure.Data.Tables;
+using MediatR;
 using TravelInspiration.API.Shared.Slices;
 
 namespace TravelInspiration.API.Features.Destinations;
@@ -27,38 +28,43 @@ public sealed class SearchDestinations : ISlice
     {
         public required int Id { get; set; }
         public required string Name { get; set; }
-        public required string ImageName { get; set; }
     }
 
-    public sealed class SearchDestinationsHandler(IConfiguration configuration) :
+    public sealed class SearchDestinationsHandler(IConfiguration configuration, 
+        TableServiceClient travelInspirationTableServiceClient) :
        IRequestHandler<SearchDestinationsQuery, IResult>
     {
         private readonly IConfiguration _configuration = configuration;
+        private readonly TableServiceClient _travelInspirationTableServiceClient = travelInspirationTableServiceClient;
 
         public Task<IResult> Handle(SearchDestinationsQuery request,
             CancellationToken cancellationToken)
         {
+            var destinationsTableClient = _travelInspirationTableServiceClient.GetTableClient("Destinations");
 
-            var destinations = new List<DestinationDto> {
-                new() { Id = 1, Name = "Antwerp, Belgium", ImageName = "antwerp.jpg" },
-                new() { Id = 2, Name = "San Francisco, USA", ImageName = "sanfranciso.jpg" },
-                new() { Id = 3, Name = "Sydney, Australia", ImageName = "sydney.jpg" },
-                new() { Id = 4, Name = "Paris, France", ImageName = "paris.jpg" },
-                new() { Id = 5, Name = "New Delhi, India", ImageName = "newdelhi.jpg" },
-                new() { Id = 6, Name = "Tokyo, Japan", ImageName = "tokio.jpg" },
-                new() { Id = 7, Name = "Cape Town, South Africa", ImageName = "capetown.jpg" },
-                new() { Id = 8, Name = "Barcelona, Spain", ImageName = "barcelona.jpg" },
-                new() { Id = 9, Name = "Toronto, Canada", ImageName = "toronto.jpg" }};
-
-            // filter destinations based on searchFor 
-            var filteredDestinations = destinations.Where(d =>
-                request.SearchFor == null ||
-                d.Name.Contains(request.SearchFor));
-
+            var filter = request.SearchFor == null
+                ? ""
+                : TableClient.CreateQueryFilter($"Name eq {request.SearchFor}");
+            
             var amountToReturn = _configuration.GetValue<int>("Destinations:AmountToReturn");
 
-            // return results, returning only the amount described in settings
-            return Task.FromResult(Results.Ok(filteredDestinations.Take(amountToReturn)));
+            var destinations =
+                destinationsTableClient.Query<TableEntity>(filter, 
+                    amountToReturn, 
+                    ["Identifier, Name"], 
+                    cancellationToken);
+
+            var destinationDtos = destinations
+                .AsPages()
+                .First()
+                .Values
+                .Select(d => new DestinationDto()
+                {
+                    Id = d.GetInt32("Identifier") ?? -1,
+                    Name = d.GetString("Name")
+                });
+            
+            return Task.FromResult(Results.Ok(destinationDtos));
         }
     }
 

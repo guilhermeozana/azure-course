@@ -4,6 +4,10 @@ GET {{HostAddressRoot}}/api/destinations?searchFor=San
 Accept: application/json
 
 ###
+GET {{HostAddressRoot}}/api/destinations?searchFor=Antwerp,%20Belgium
+Accept: application/json
+
+###
 GET {{HostAddressRoot}}/api/destinations
 Accept: application/json
 
@@ -40,3 +44,15 @@ Accept: application/json
 GET {{HostAddressRoot}}/api/itineraries/1/stops
 Accept: application/json 
  
+
+###
+GET https://appdevstdevwetravel5.table.core.windows.net/Destinations?sp=r&st=2025-08-21T18:01:35Z&se=2025-08-22T18:01:00Z&spr=https&sv=2024-11-04&sig=zArwZzVbHqJ2jV3%2B5WTHIZYt7YsnZnlM84z792vle5M%3D&tn=Destinations
+Accept: application/json
+
+###
+GET https://appdevstdevwetravel5.table.core.windows.net/Destinations?$filter=(Identifier%20ge%202)&sp=r&st=2025-08-21T18:01:35Z&se=2025-08-22T18:01:00Z&spr=https&sv=2024-11-04&sig=zArwZzVbHqJ2jV3%2B5WTHIZYt7YsnZnlM84z792vle5M%3D&tn=Destinations
+Accept: application/json
+
+###
+GET https://appdevstdevwetravel5.table.core.windows.net/Destinations?$filter=(Identifier%20ge%202)&select=Identifier,Name&sp=r&st=2025-08-21T18:01:35Z&se=2025-08-22T18:01:00Z&spr=https&sv=2024-11-04&sig=zArwZzVbHqJ2jV3%2B5WTHIZYt7YsnZnlM84z792vle5M%3D&tn=Destinations
+Accept: application/json

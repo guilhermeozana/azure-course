@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using Azure;
+using Azure.Data.Tables;
 using TravelInspiration.API.Shared.Behaviours;
 using TravelInspiration.API.Shared.Metrics;
 using TravelInspiration.API.Shared.Persistence;
@@ -36,6 +38,12 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<TravelInspirationDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("TravelInspirationDbConnection")));
+
+        services.AddScoped(sp =>
+        {
+            return new TableServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
+        });
+        
         return services;
     }
 }
