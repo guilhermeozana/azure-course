@@ -1,4 +1,4 @@
-@HostAddressRoot = https://localhost:7293
+@HostAddressRoot = http://localhost:7167
 
 GET {{HostAddressRoot}}/api/destinations?searchFor=San
 Accept: application/json

@@ -1,8 +1,12 @@
-﻿using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using System.Reflection;
-using Azure;
+﻿using System.Reflection;
+using Azure.Core;
 using Azure.Data.Tables;
+using Azure.Identity;
+using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
+using FluentValidation;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using TravelInspiration.API.Shared.Behaviours;
 using TravelInspiration.API.Shared.Metrics;
 using TravelInspiration.API.Shared.Persistence;
@@ -34,14 +38,37 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection RegisterPersistenceServices(
         this IServiceCollection services,
         IConfiguration configuration)
-    { 
+    {
+        var credential = new DefaultAzureCredential();
+        
+        // Get a token to access Azure SQL
+        var accessTokenResponse = credential.GetToken(
+            new TokenRequestContext(["https://database.windows.net/.default"]));
+
+        var sqlConnection = new SqlConnection(
+            configuration.GetConnectionString("TravelInspirationDbConnection"))
+        {
+            AccessToken = accessTokenResponse.Token
+        };
+        
         services.AddDbContext<TravelInspirationDbContext>(options =>
             options.UseSqlServer(
-                configuration.GetConnectionString("TravelInspirationDbConnection")));
+                sqlConnection,
+                sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
         services.AddScoped(sp =>
         {
             return new TableServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
+        });
+        
+        services.AddScoped(sp =>
+        {
+            return new BlobServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
+        });
+        
+        services.AddScoped(sp =>
+        {
+            return new QueueServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
         });
         
         return services;

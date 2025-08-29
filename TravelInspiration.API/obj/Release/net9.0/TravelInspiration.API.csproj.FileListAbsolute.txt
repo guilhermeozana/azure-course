@@ -157,3 +157,8 @@ C:\courses\azure-course\TravelInspiration.API\obj\Release\net9.0\refint\TravelIn
 C:\courses\azure-course\TravelInspiration.API\obj\Release\net9.0\TravelInspiration.API.pdb
 C:\courses\azure-course\TravelInspiration.API\obj\Release\net9.0\TravelInspiration.API.genruntimeconfig.cache
 C:\courses\azure-course\TravelInspiration.API\obj\Release\net9.0\ref\TravelInspiration.API.dll
+C:\courses\azure-course\TravelInspiration.API\bin\Release\net9.0\Azure.Data.Tables.dll
+C:\courses\azure-course\TravelInspiration.API\bin\Release\net9.0\Azure.Storage.Blobs.dll
+C:\courses\azure-course\TravelInspiration.API\bin\Release\net9.0\Azure.Storage.Common.dll
+C:\courses\azure-course\TravelInspiration.API\bin\Release\net9.0\Azure.Storage.Queues.dll
+C:\courses\azure-course\TravelInspiration.API\bin\Release\net9.0\System.IO.Hashing.dll

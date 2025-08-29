@@ -1,9 +1,19 @@
 {
   "dependencies": {
+    "storage1": {
+      "type": "storage",
+      "connectionId": "ConnectionStrings:TravelInspirationStorageConnectionString",
+      "dynamicId": null
+    },
     "mssql1": {
-      "ignored": "true",
       "type": "mssql",
-      "connectionId": "ConnectionStrings:TravelInspirationDbConnection"
+      "connectionId": "ConnectionStrings:TravelInspirationDbConnection",
+      "dynamicId": null
+    },
+    "appInsights1": {
+      "type": "appInsights",
+      "connectionId": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+      "dynamicId": null
     }
   }
 }

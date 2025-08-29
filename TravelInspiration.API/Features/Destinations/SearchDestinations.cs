@@ -1,4 +1,5 @@
 ﻿using Azure.Data.Tables;
+using Azure.Storage.Blobs;
 using MediatR;
 using TravelInspiration.API.Shared.Slices;
 
@@ -28,14 +29,18 @@ public sealed class SearchDestinations : ISlice
     {
         public required int Id { get; set; }
         public required string Name { get; set; }
+
+        public List<string> ImageUris { get; set; } = [];
     }
 
     public sealed class SearchDestinationsHandler(IConfiguration configuration, 
-        TableServiceClient travelInspirationTableServiceClient) :
+        TableServiceClient travelInspirationTableServiceClient,
+        BlobServiceClient travelInspirationBlobServiceClient) :
        IRequestHandler<SearchDestinationsQuery, IResult>
     {
         private readonly IConfiguration _configuration = configuration;
         private readonly TableServiceClient _travelInspirationTableServiceClient = travelInspirationTableServiceClient;
+        private readonly BlobServiceClient _travelInspirationBlobServiceClient = travelInspirationBlobServiceClient;
 
         public Task<IResult> Handle(SearchDestinationsQuery request,
             CancellationToken cancellationToken)
@@ -54,7 +59,7 @@ public sealed class SearchDestinations : ISlice
                     ["Identifier, Name"], 
                     cancellationToken);
 
-            var destinationDtos = destinations
+            var pagedDestinationDtos = destinations
                 .AsPages()
                 .First()
                 .Values
@@ -62,10 +67,33 @@ public sealed class SearchDestinations : ISlice
                 {
                     Id = d.GetInt32("Identifier") ?? -1,
                     Name = d.GetString("Name")
-                });
+                })
+                .ToList();
+
+            if (pagedDestinationDtos.Count() == 0)
+            { 
+                return Task.FromResult(Results.Ok());
+            }
+
+            var destinationImagesContainerClient = _travelInspirationBlobServiceClient
+                .GetBlobContainerClient("destination-images");
+
+            foreach (var destination in pagedDestinationDtos)
+            {
+                var blobs = destinationImagesContainerClient
+                    .FindBlobsByTags($"DestinationIdentifier='{destination.Id}'",
+                        cancellationToken);
+
+                foreach (var blob in blobs)
+                {
+                    var blobClient = destinationImagesContainerClient
+                        .GetBlobClient(blob.BlobName);
+                    
+                    destination.ImageUris.Add(blobClient.Uri.AbsoluteUri);
+                }
+            }
             
-            return Task.FromResult(Results.Ok(destinationDtos));
+            return Task.FromResult(Results.Ok(pagedDestinationDtos)); 
         }
     }
-
 }
