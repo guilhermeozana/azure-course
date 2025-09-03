@@ -3,6 +3,7 @@ using GetItinerariesFunction.API.Itineraries.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -23,8 +24,11 @@ public class GetItinerariesFunction
     }
 
     [Function("GetItinerariesFunction")]
+    [OpenApiOperation("GetItineraries", "GetItineraries", Description = "Get the itineraries")]
+    [OpenApiParameter("SearchFor", In = Microsoft.OpenApi.Models.ParameterLocation.Query, Required = false, Type = typeof(string), Description = "Search for itineraries by part of their name or description.")]
+    [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, "application/json", typeof(List<ItineraryDto>))]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "itineraries")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "itineraries")] HttpRequest req)
     {
         string? searchForValue = req.Query["SearchFor"];
 

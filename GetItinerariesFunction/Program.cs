@@ -3,6 +3,8 @@ using Azure.Identity;
 using GetItinerariesFunction.API.Itineraries.DbContexts;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Abstractions;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +20,18 @@ builder.ConfigureFunctionsWebApplication();
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
+
+builder.Services.AddSingleton<IOpenApiConfigurationOptions>(_ =>
+{
+    return new OpenApiConfigurationOptions()
+    {
+        Info = new Microsoft.OpenApi.Models.OpenApiInfo()
+        {
+            Title = "Travel inspiration function app endpoints",
+            Description = "All travel inspiration API endpoints the have been migrated to a function app."
+        }
+    };
+});
 
 var credential = new DefaultAzureCredential();
 

@@ -1,12 +1,13 @@
-﻿using System.Reflection;
-using Azure.Core;
+﻿using Azure.Core;
 using Azure.Data.Tables;
 using Azure.Identity;
+using Azure.Messaging.EventGrid;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using FluentValidation;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using TravelInspiration.API.Shared.Behaviours;
 using TravelInspiration.API.Shared.Metrics;
 using TravelInspiration.API.Shared.Persistence;
@@ -17,7 +18,7 @@ namespace TravelInspiration.API;
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection RegisterApplicationServices(this IServiceCollection services)
-    { 
+    {
         services.RegisterSlices();
 
         var currentAssembly = Assembly.GetExecutingAssembly();
@@ -29,9 +30,9 @@ public static class ServiceCollectionExtensions
                 .AddOpenRequestPreProcessor(typeof(LoggingBehaviour<>))
                 .AddOpenBehavior(typeof(ModelValidationBehaviour<,>))
                 .AddOpenBehavior(typeof(HandlerPerformanceMetricBehaviour<,>));
-        }); 
+        });
         services.AddValidatorsFromAssembly(currentAssembly);
-        services.AddSingleton<HandlerPerformanceMetric>(); 
+        services.AddSingleton<HandlerPerformanceMetric>();
         return services;
     }
 
@@ -40,7 +41,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         var credential = new DefaultAzureCredential();
-        
+
         // Get a token to access Azure SQL
         var accessTokenResponse = credential.GetToken(
             new TokenRequestContext(["https://database.windows.net/.default"]));
@@ -50,7 +51,7 @@ public static class ServiceCollectionExtensions
         {
             AccessToken = accessTokenResponse.Token
         };
-        
+
         services.AddDbContext<TravelInspirationDbContext>(options =>
             options.UseSqlServer(
                 sqlConnection,
@@ -58,19 +59,27 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(sp =>
         {
+            return new EventGridPublisherClient(
+                new Uri(configuration["EventGridTopicEndpoint_ImageCreatedOrUpdated"] ??
+                throw new ArgumentException("Key EventGridTopicEndpoint_ImageCreatedOrUpdated not found or invalid value.")),
+                credential);
+        });
+
+        services.AddScoped(sp =>
+        {
             return new TableServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
         });
-        
+
         services.AddScoped(sp =>
         {
             return new BlobServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
         });
-        
+
         services.AddScoped(sp =>
         {
             return new QueueServiceClient(configuration.GetConnectionString("TravelInspirationStorageConnectionString"));
         });
-        
+
         return services;
     }
 }

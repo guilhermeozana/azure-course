@@ -3,14 +3,17 @@ using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace GetItinerariesFunction.API.Itineraries;
 
-public static class GetAndCreateMostViewedItinerariesDurableFunction
+public class GetAndCreateMostViewedItinerariesDurableFunction(IConfiguration configuration)
 {
+    private readonly IConfiguration _configuration = configuration;
+
     [Function(nameof(GetAndCreateMostViewedItinerariesDurableFunction))]
-    public static async Task<List<string>> RunOrchestrator(
+    public async Task<string> RunOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var hostAddress = context.GetInput<string>();
@@ -21,7 +24,8 @@ public static class GetAndCreateMostViewedItinerariesDurableFunction
             FirstRetryInterval = TimeSpan.FromSeconds(5)
         };
 
-        var request = new DurableHttpRequest(HttpMethod.Get, new Uri($"{hostAddress}/itineraries"))
+        var request = new DurableHttpRequest(HttpMethod.Get,
+            new Uri($"{hostAddress}/itineraries?code={_configuration["GetItinerariesFunctionKey"]}"))
         {
             HttpRetryOptions = httpRetryOptions
         };
@@ -29,33 +33,25 @@ public static class GetAndCreateMostViewedItinerariesDurableFunction
 
         if (getItinerariesResponse.StatusCode != System.Net.HttpStatusCode.OK)
         {
-            return ["Failed to get itineraries."];
+            return "Failed to get itineraries.";
         }
 
         var createMostViewedItinerariesResponse = await context.CallHttpAsync(
             HttpMethod.Post,
-            new Uri($"{hostAddress}/mostvieweditineraries"),
+            new Uri($"{hostAddress}/mostvieweditineraries?code={_configuration["CreateMostViewedItinerariesFunctionKey"]}"),
             getItinerariesResponse.Content ?? "",
             retryOptions: httpRetryOptions);
 
         if (createMostViewedItinerariesResponse.StatusCode != System.Net.HttpStatusCode.OK)
         {
-            return ["Failed to create most viewed itineraries."];
+            return "Failed to create most viewed itineraries.";
         }
 
-        return ["Most viewed itineraries created."];
-    }
-
-    [Function(nameof(SayHello))]
-    public static string SayHello([ActivityTrigger] string name, FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("SayHello");
-        logger.LogInformation("Saying hello to {name}.", name);
-        return $"Hello {name}!";
+        return "Most viewed itineraries created.";
     }
 
     [Function("GetAndCreateMostViewedItinerariesDurableFunction_HttpStart")]
-    public static async Task<HttpResponseData> HttpStart(
+    public async Task<HttpResponseData> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "generatemostvieweditineraries")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
@@ -64,7 +60,7 @@ public static class GetAndCreateMostViewedItinerariesDurableFunction
 
         // Get host address
         string hostAddress = $"{req.Url.Scheme}://{req.Url.Host}:{req.Url.Port}" +
-                             $"{req.Url.LocalPath.Substring(0, req.Url.LocalPath.IndexOf("generatehostviewedititineraries") - 1)}";
+                             $"{req.Url.LocalPath.Substring(0, req.Url.LocalPath.IndexOf("generatemostvieweditineraries") - 1)}";
 
 
         // Function input comes from the request content.
